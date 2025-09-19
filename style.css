@@ -1,0 +1,95 @@
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    color: aliceblue;
+    font-family: "Lexend Zetta", sans-serif;    
+    font-size: 12px;
+    font-weight: 300;
+}
+
+body{
+    background-color: #161616;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.main{
+    border-radius: 10px;
+    background-color: #17171700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+#albumCover{
+    margin-top: 5vh;
+    margin-bottom: 5vh;
+    background-image: url(pictures/cover.png);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 340px;
+    height: 340px;
+    border-radius: 0px;
+    box-shadow: inset 0 0px 40px 40px#000000e2;
+}
+
+.text{
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: space-between;
+    padding: 8px 16px 8px 8px;
+    white-space: wrap;
+    overflow: hidden;
+}
+
+#title{
+    color: #ffffff;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.controls{
+    margin-top: 5vh;
+    margin-bottom: 5vh;
+    width: 340px;
+    height: fit-content;
+    background-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.buttons{
+    height: 32px;
+    width: auto;
+    background: transparent;
+    border: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+#folder:active{
+    color: #9673E6;
+}
+
+.btnImg{
+    max-width: 70%;
+    max-height: auto;
+}
+
+.btnImg:active{
+    max-width: 50%;
+    max-height: auto;
+}
