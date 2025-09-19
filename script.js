@@ -1,6 +1,4 @@
-// script.js
 
-// ---- IndexedDB для хранения дескриптора папки ----
 const DB_NAME = 'music-player-db';
 const STORE_NAME = 'handles';
 
@@ -46,7 +44,6 @@ async function idbDelete(key) {
   });
 }
 
-// ---- UI элементы ----
 const folderBtn = document.getElementById('folder');
 const playBtnImg = document.getElementById('play');
 const pauseBtnImg = document.getElementById('pause');
@@ -56,16 +53,14 @@ const titleEl = document.getElementById('title');
 const artistEl = document.getElementById('artist');
 const albumCoverEl = document.getElementById('albumCover');
 
-// ---- state плеера ----
 let dirHandle = null;
 const audio = new Audio();
-let fileHandles = [];           // FileSystemFileHandle[]
-let shuffledOrder = [];         // индексы 0..n-1 в перемешанном порядке
-let playedOrderPositions = [];  // история проигранных позиций (индексы в shuffledOrder)
+let fileHandles = [];         
+let shuffledOrder = [];       
+let playedOrderPositions = []; 
 let currentAudioURL = null;
 let currentArtURL = null;
 
-// ---- минимальные UI-функции ----
 function clearMetaUI() {
   titleEl.textContent = '';
   artistEl.textContent = '';
@@ -94,7 +89,6 @@ function revokeAudioURL() {
   }
 }
 
-// ---- shuffle ----
 function createShuffleOrder(n) {
   const arr = Array.from({ length: n }, (_, i) => i);
   for (let i = arr.length - 1; i > 0; i--) {
@@ -103,8 +97,6 @@ function createShuffleOrder(n) {
   }
   return arr;
 }
-
-// ---- ID3 парсер (простая реализация ID3v2.3/2.4 + fallback на ID3v1) ----
 function syncSafeToInt(b0, b1, b2, b3) {
   return ((b0 & 0x7f) << 21) | ((b1 & 0x7f) << 14) | ((b2 & 0x7f) << 7) | (b3 & 0x7f);
 }
@@ -135,12 +127,12 @@ function findTerminator(bytes, start, encodingByte) {
 async function parseID3(file) {
   const result = { title: '', artist: '', artURL: null };
   try {
-    const headerSliceSize = Math.min(1572864, file.size); // ~1.5MB to include APIC
+    const headerSliceSize = Math.min(1572864, file.size);
     const headerBuf = await file.slice(0, headerSliceSize).arrayBuffer();
     const header = new Uint8Array(headerBuf);
     const view = new DataView(headerBuf);
     if (header.length >= 10 && String.fromCharCode(header[0], header[1], header[2]) === 'ID3') {
-      const ver = header[3]; // 3 or 4
+      const ver = header[3];
       const tagSize = syncSafeToInt(header[6], header[7], header[8], header[9]);
       const totalTagBytes = Math.min(tagSize + 10, header.length);
       let offset = 10;
@@ -165,7 +157,6 @@ async function parseID3(file) {
           if (frameId === 'TIT2' && !result.title) result.title = text;
           if (frameId === 'TPE1' && !result.artist) result.artist = text;
         } else if (frameId === 'APIC') {
-          // parse APIC: encoding(1), mime, 0x00, pictureType(1), desc, 0x00, pictureData
           if (frameSize > 0 && !result.artURL) {
             const encoding = header[frameDataStart];
             let p = frameDataStart + 1;
@@ -175,9 +166,7 @@ async function parseID3(file) {
             const mime = new TextDecoder('ascii').decode(header.slice(p, mimeEnd));
             p = mimeEnd + 1;
             if (p >= frameDataEnd) { offset = frameDataEnd; continue; }
-            // picture type
-            p += 1; // skip picture type byte
-            // description until terminator
+            p += 1; 
             const descEnd = findTerminator(header, p, encoding);
             p = descEnd;
             if (encoding === 1 || encoding === 2) p += 2; else p += 1;
@@ -193,7 +182,6 @@ async function parseID3(file) {
         offset = frameDataEnd;
       }
     }
-    // Если не нашли title/artist -> попробовать ID3v1 (в конце файла)
     if (!result.title && !result.artist && file.size >= 128) {
       try {
         const tail = await file.slice(file.size - 128, file.size).arrayBuffer();
@@ -206,7 +194,6 @@ async function parseID3(file) {
         }
       } catch (e) { /* ignore */ }
     }
-    // final fallbacks
     if (!result.title) result.title = file.name.replace(/\.mp3$/i, '');
     if (!result.artist) result.artist = '';
   } catch (e) {
@@ -218,7 +205,6 @@ async function parseID3(file) {
   return result;
 }
 
-// ---- чтение списка mp3 из папки (non-recursive) ----
 async function buildFileList(handle) {
   const out = [];
   try {
@@ -233,7 +219,6 @@ async function buildFileList(handle) {
   return out;
 }
 
-// ---- подготовка плейлиста ----
 async function preparePlaylist() {
   if (!dirHandle) return false;
   try {
@@ -253,7 +238,6 @@ async function preparePlaylist() {
   return true;
 }
 
-// ---- воспроизведение по позиции в shuffledOrder ----
 async function playAtOrderPos(orderPos, addToHistory = true) {
   if (!shuffledOrder.length || orderPos < 0 || orderPos >= shuffledOrder.length) return;
   const fileIndex = shuffledOrder[orderPos];
@@ -264,7 +248,6 @@ async function playAtOrderPos(orderPos, addToHistory = true) {
     currentAudioURL = URL.createObjectURL(file);
     audio.src = currentAudioURL;
     await audio.play().catch(() => {});
-    // парсим ID3 (приходит title, artist, artURL)
     const meta = await parseID3(file);
     setMetaUI({ title: meta.title, artist: meta.artist, artURL: meta.artURL });
     if (addToHistory) playedOrderPositions.push(orderPos);
@@ -273,7 +256,6 @@ async function playAtOrderPos(orderPos, addToHistory = true) {
   }
 }
 
-// ---- next / prev ----
 async function playNext() {
   if (!shuffledOrder.length) return;
   const playedSet = new Set(playedOrderPositions);
@@ -289,12 +271,11 @@ async function playNext() {
 }
 async function playPrev() {
   if (playedOrderPositions.length <= 1) return;
-  playedOrderPositions.pop(); // убираем текущую
+  playedOrderPositions.pop(); 
   const prev = playedOrderPositions[playedOrderPositions.length - 1];
   await playAtOrderPos(prev, false);
 }
 
-// ---- обработчики кнопок ----
 folderBtn.addEventListener('click', async () => {
   try {
     const handle = await window.showDirectoryPicker();
@@ -319,12 +300,10 @@ prevBtnImg.addEventListener('click', () => playPrev());
 audio.addEventListener('ended', () => playNext());
 audio.addEventListener('error', (e) => console.error('Audio error:', e));
 
-// ---- восстановление сохранённого дескриптора папки (при загрузке) ----
 async function tryRestoreDirectory() {
   try {
     const stored = await idbGet('music-dir');
     if (!stored) return;
-    // проверяем права — если есть методы query/requestPermission, используем их
     dirHandle = stored;
     try {
       if (typeof dirHandle.queryPermission === 'function') {
@@ -338,15 +317,12 @@ async function tryRestoreDirectory() {
           return;
         }
       }
-      // попробуем собрать список файлов — если выбросит, считаем дескриптор недействительным
       const ok = await preparePlaylist();
       if (!ok) {
-        // если нет mp3 — не сохраняем этот дескриптор
         try { await idbDelete('music-dir'); } catch (e) {}
         dirHandle = null;
       }
     } catch (e) {
-      // дескриптор недоступен -> удаляем
       try { await idbDelete('music-dir'); } catch (err) {}
       dirHandle = null;
     }
@@ -355,8 +331,8 @@ async function tryRestoreDirectory() {
   }
 }
 
-// ---- init ----
 (async function init() {
   clearMetaUI();
   await tryRestoreDirectory();
 })();
+
