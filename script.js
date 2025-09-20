@@ -1,3 +1,8 @@
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
+    .then(() => console.log("Service Worker зарегистрирован"))
+    .catch((err) => console.error("SW ошибка:", err));
+}
 
 const DB_NAME = 'music-player-db';
 const STORE_NAME = 'handles';
@@ -55,8 +60,8 @@ const albumCoverEl = document.getElementById('albumCover');
 
 let dirHandle = null;
 const audio = new Audio();
-let fileHandles = [];         
-let shuffledOrder = [];       
+let fileHandles = [];        
+let shuffledOrder = [];     
 let playedOrderPositions = []; 
 let currentAudioURL = null;
 let currentArtURL = null;
@@ -97,6 +102,7 @@ function createShuffleOrder(n) {
   }
   return arr;
 }
+
 function syncSafeToInt(b0, b1, b2, b3) {
   return ((b0 & 0x7f) << 21) | ((b1 & 0x7f) << 14) | ((b2 & 0x7f) << 7) | (b3 & 0x7f);
 }
@@ -127,12 +133,12 @@ function findTerminator(bytes, start, encodingByte) {
 async function parseID3(file) {
   const result = { title: '', artist: '', artURL: null };
   try {
-    const headerSliceSize = Math.min(1572864, file.size);
+    const headerSliceSize = Math.min(1572864, file.size); 
     const headerBuf = await file.slice(0, headerSliceSize).arrayBuffer();
     const header = new Uint8Array(headerBuf);
     const view = new DataView(headerBuf);
     if (header.length >= 10 && String.fromCharCode(header[0], header[1], header[2]) === 'ID3') {
-      const ver = header[3];
+      const ver = header[3]; 
       const tagSize = syncSafeToInt(header[6], header[7], header[8], header[9]);
       const totalTagBytes = Math.min(tagSize + 10, header.length);
       let offset = 10;
@@ -160,7 +166,6 @@ async function parseID3(file) {
           if (frameSize > 0 && !result.artURL) {
             const encoding = header[frameDataStart];
             let p = frameDataStart + 1;
-            // mime string
             let mimeEnd = p;
             while (mimeEnd < frameDataEnd && header[mimeEnd] !== 0x00) mimeEnd++;
             const mime = new TextDecoder('ascii').decode(header.slice(p, mimeEnd));
@@ -330,9 +335,7 @@ async function tryRestoreDirectory() {
     console.error('Ошибка восстановления папки:', e);
   }
 }
-
 (async function init() {
   clearMetaUI();
   await tryRestoreDirectory();
 })();
-
